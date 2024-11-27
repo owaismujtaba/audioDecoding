@@ -1,3 +1,4 @@
+import numpy as np
 import config as config
 
 def printSectionHeader(message):
@@ -19,7 +20,7 @@ def check_property(property, description):
     else:
         return False
 
-def filter_events(eeg, audio, auio_events):
+def filter_events(eeg, auio_events):
     annotations = eeg.annotations
     intrested_indexes = []
     for index in range(auio_events.shape[0]):
@@ -32,6 +33,7 @@ def filter_events(eeg, audio, auio_events):
             intrested_indexes.append(index)
 
     return intrested_indexes
+
 
 
 
