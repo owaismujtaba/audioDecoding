@@ -1,11 +1,15 @@
 import numpy as np
+from sklearn.model_selection import train_test_split
 from colorama import Fore, Style, init
 
 import config as config
 from src.utils import filter_events, printSectionHeader
-from dataset.bids_reader import BidsFileLoader
+from src.dataset.bids_reader import BidsFileLoader
+
+import pdb
 
 init()
+
 class DataExtractor:
     """
     Extracts time-aligned EEG and audio data segments based on event annotations.
@@ -26,12 +30,13 @@ class DataExtractor:
         - audio: A NumPy array containing the raw audio signal
         - audio_events: A dataframe containing audio event information, including onsets (tsv file)
         """
+        printSectionHeader("🔄 Initializing Data Extractor...")
+
         self.eeg = eeg
         self.audio = audio
         self.events = audio_events
 
         self.extract_data()
-
 
     def extract_data(self):
         """
@@ -40,72 +45,35 @@ class DataExtractor:
         Uses the `filter_events` function to identify relevant events and then extracts 
         segments of EEG and audio data corresponding to the specified time segment.
         """
-        printSectionHeader(f"{Fore.CYAN}📂 Loading BIDS Subject Info")
+        print("📂 Loading EEG and Audio Data...")
 
-        eeg_data = self.eeg.get_data()
-        intrested_indexes = filter_events(self.eeg, self.events)
-        annotations = self.eeg.annotations
-        eeg_samples, auido_samples = [], []
-        
+        eeg_data = self.eeg.get_data()  # 🧠 EEG Data
+        intrested_indexes = filter_events(self.eeg, self.events)  # 🎯 Filtering Events
+        annotations = self.eeg.annotations  # 🧾 EEG Annotations
+        eeg_samples, audio_samples = [], []
+
+        # Extract the samples based on event onsets
+        print("🔍 Extracting EEG and Audio Samples...")
+
         for index in intrested_indexes:
-            eeg_onset = annotations[index]['onset']
-            audio_onset = self.events['onset'][index]
+            eeg_onset = annotations[index]['onset']  # 🧠 EEG Onset
+            audio_onset = self.events['onset'][index]  # 🎵 Audio Onset
             
-            eeg_start_index = int(eeg_onset*config.EEG_SR)
-            eeg_end_index = eeg_start_index + config.TIME_SEGMENT*config.EEG_SR
-            eeg_samples.append(eeg_data[:,eeg_start_index:eeg_end_index])
+            # Get EEG samples for the specified time window
+            eeg_start_index = int(eeg_onset * config.EEG_SR)
+            eeg_end_index = eeg_start_index + config.TIME_SEGMENT * config.EEG_SR
+            eeg_samples.append(eeg_data[:, eeg_start_index:eeg_end_index])
 
-            audio_strat_index = int(audio_onset*config.AUDIO_SR)
-            audio_end_index = audio_strat_index + config.TIME_SEGMENT*config.AUDIO_SR
-            auido_samples.append(self.audio[audio_strat_index: audio_end_index])
+            # Get Audio samples for the specified time window
+            audio_start_index = int(audio_onset * config.AUDIO_SR)
+            audio_end_index = audio_start_index + config.TIME_SEGMENT * config.AUDIO_SR
+            audio_samples.append(self.audio[audio_start_index: audio_end_index])
 
+        # Store the extracted samples
+        self.eeg_samples = np.array(eeg_samples)  # 🧠 Extracted EEG Samples
+        self.audio_samples = np.array(audio_samples)  # 🎵 Extracted Audio Samples
 
-        self.eeg_samples =  np.array(eeg_samples)
-        self.audio_samples = np.array(auido_samples)
-
-class FeatureExtraction1:
-    def __init__(self, eeg_samples, audio_samples):
-        self.eeg_samples = eeg_samples
-        self.audio_samples = audio_samples
-        self.window_size = 0.2
-        self.frame_shift = 0.1
-        
-        self.eeg_window_size = int(config.EEG_SR * self.window_size)
-        self.eeg_step_size = int(config.EEG_SR * self.frame_shift)
-        
-        self.audio_window_size = int(config.AUDIO_SR * self.window_size)
-        self.audio_step_size = int(config.AUDIO_SR * self.frame_shift)
-
-        eeg_windows = np.array([
-            self.sliding_window(trial, self.eeg_window_size, self.eeg_step_size) 
-            for trial in self.eeg_samples
-        ])
-        audio_windows = np.array([
-            self.sliding_window(trial, self.audio_window_size, self.audio_step_size) 
-            for trial in self.audio_samples
-        ])
-
-        eeg_shape, audio_shape = eeg_windows.shape, audio_windows.shape
-        self.eeg_windows = eeg_windows.reshape(
-            eeg_shape[0]*eeg_shape[1], eeg_shape[2], eeg_shape[2]
-        )
-        self.audio_windows = audio_windows.reshape(
-            audio_shape[0]*audio_shape[1], audio_shape[2], audio_shape[2]
-        )
-
-    def sliding_window(self, data, window_size, step_size):
-        """
-        Create sliding windows from data with specified window size and step size.
-        """
-        num_windows = (data.shape[-1] - window_size) // step_size + 1
-        return np.array([
-            data[..., i * step_size: i * step_size + window_size]
-            for i in range(num_windows)
-        ])
-
-
-import numpy as np
-import config
+        print("✅ Data Extraction Complete!")
 
 class FeatureExtraction:
     """
@@ -128,6 +96,8 @@ class FeatureExtraction:
             eeg_samples (numpy.ndarray): EEG data with shape [N_trials, N_channels, N_timepoints].
             audio_samples (numpy.ndarray): Audio data with shape [N_trials, N_timepoints].
         """
+        printSectionHeader("🔄 Initializing Feature Extraction...")
+
         self.eeg_samples = eeg_samples
         self.audio_samples = audio_samples
         self.window_size = 0.2  # in seconds
@@ -139,8 +109,15 @@ class FeatureExtraction:
         self.audio_window_size = int(config.AUDIO_SR * self.window_size)
         self.audio_step_size = int(config.AUDIO_SR * self.frame_shift)
 
+        print(f"🔧 EEG Window Size: {self.eeg_window_size} samples, Step Size: {self.eeg_step_size} samples")
+        print(f"🔧 Audio Window Size: {self.audio_window_size} samples, Step Size: {self.audio_step_size} samples")
+
+        # Extract windows
+        print("🔍 Extracting EEG and Audio sliding windows...")
         self.eeg_windows = self.extract_windows(self.eeg_samples, self.eeg_window_size, self.eeg_step_size)
         self.audio_windows = self.extract_windows(self.audio_samples, self.audio_window_size, self.audio_step_size)
+
+        print("✅ Feature Extraction Complete!")
 
     def sliding_window(self, data, window_size, step_size):
         """
@@ -174,26 +151,83 @@ class FeatureExtraction:
         Returns:
             numpy.ndarray: Reshaped array of sliding windows.
         """
+        print("🔄 Extracting windows for all trials...")
         windows = np.array([
             self.sliding_window(trial, window_size, step_size)
             for trial in samples
         ])
-        # Combine trials and windows into a single axis
         combined_shape = (-1, *windows.shape[2:])  # Flatten first two dimensions
+        print("✅ Windows Extraction Complete!")
         return windows.reshape(combined_shape)
 
-
 def data_extraction_pipeline(subject_id, session_id):
-    bids_reader = BidsFileLoader(subject_id=subject_id, session_id=session_id)
-    eeg = bids_reader.eeg_data
-    audio = bids_reader.audio_data
-    audio_events = bids_reader.audio_events
+    printSectionHeader("🔄 Starting Data Extraction Pipeline...")
 
+    # 📂 Load BIDS Data
+    print(f"📂 Loading EEG and Audio data for Subject {subject_id}, Session {session_id}...")
+    bids_reader = BidsFileLoader(subject_id=subject_id, session_id=session_id)
+    eeg = bids_reader.eeg_data  # 🧠 EEG Data
+    audio = bids_reader.audio_data  # 🎵 Audio Data
+    audio_events = bids_reader.audio_events  # 📍 Audio Events
+
+    print("✅ Data Loaded Successfully!")
+
+    # 🔍 Extract Data
+    print("🔍 Extracting EEG and Audio samples...")
     data_extractor = DataExtractor(
         eeg=eeg, audio=audio, audio_events=audio_events
     )
-
-    eeg_samples = data_extractor.eeg_samples
-    audio_samples = data_extractor.audio_samples
+    
+    eeg_samples = data_extractor.eeg_samples  # 🧠 Extracted EEG Samples
+    audio_samples = data_extractor.audio_samples  # 🎵 Extracted Audio Samples
+    
+    print("✅ Data Extraction Complete!")
 
     return eeg_samples, audio_samples
+
+
+def train_val_test_dataloader_pipeline(subject_id, session_id):
+    printSectionHeader("🔄 Starting Train-Val-Test Data Pipeline...")
+
+    # Get EEG and Audio Samples
+    print(f"🔄 Extracting data for Subject {subject_id}, Session {session_id}...")
+    eeg_samples, audio_samples = data_extraction_pipeline(
+        subject_id=subject_id, session_id=session_id
+    )
+
+    print("✅ Data Extraction Complete!")
+
+    # Split Data for Training and Testing
+    print("🔀 Splitting data into Train and Test sets...")
+    indexs = [i for i in range(eeg_samples.shape[0])]
+    train_indexs, test_indexs = train_test_split(indexs, test_size=0.15, random_state=42)
+
+    train_eeg_samples = eeg_samples[train_indexs]
+    test_eeg_samples = eeg_samples[test_indexs]
+
+    train_audio_samples = audio_samples[train_indexs]
+    test_audio_samples = audio_samples[test_indexs]
+
+    print("✅ Data Split Complete!")
+
+    # Feature Extraction
+    print("🔧 Extracting Features from Train and Test data...")
+    train_feature_extractor = FeatureExtraction(
+        eeg_samples=train_eeg_samples,
+        audio_samples=train_audio_samples
+    )
+
+    test_feature_extractor = FeatureExtraction(
+        eeg_samples=test_eeg_samples,
+        audio_samples=test_audio_samples
+    )
+
+    train_eeg_windows = train_feature_extractor.eeg_windows  # 🧠 EEG Windows
+    train_audio_windows = train_feature_extractor.audio_windows  # 🎵 Audio Windows
+    test_eeg_windows = test_feature_extractor.eeg_windows  # 🧠 EEG Windows
+    test_audio_windows = test_feature_extractor.audio_windows  # 🎵 Audio Windows
+
+    print("✅ Feature Extraction Complete for Train and Test!")
+
+    return train_eeg_windows, test_eeg_windows, train_audio_windows, test_audio_windows
+

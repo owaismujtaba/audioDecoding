@@ -34,12 +34,14 @@ class BidsFileLoader:
             session_id (str): The session identifier.
         """
         printSectionHeader(f"{Fore.CYAN}📂 Loading BIDS Subject Info")
-        printSectionHeader(f"{Fore.CYAN} Loading BIDS Subject Info")
         self.subject_id = subject_id
         self.session_id = session_id
         self.audio_filename = f'sub-{subject_id}_ses-{session_id}_task-PilotStudy_run-01_audio.wav'
         self.audio_events_filename = f'sub-{subject_id}_ses-{session_id}_task-PilotStudy_run-01_events.tsv'
         self.eeg_filename = f'sub-{subject_id}_ses-{session_id}_task-PilotStudy_run-01_eeg.edf'
+        
+        # Loading the data
+        print("🔄 Initializing BIDS File Loader...")
         self.load_files()
 
     def load_files(self):
@@ -49,12 +51,24 @@ class BidsFileLoader:
         This method locates the files within a BIDS-compliant directory structure, loads the EEG data,
         reads the audio data along with its sample rate, and parses the audio event markers.
         """
-        printSectionHeader(f"{Fore.CYAN}📂 Loading BIDS Data")
+        print(f"{Fore.CYAN}📂 Loading BIDS Data...")
+
+        # File paths
         folder = Path(config.BIDS_DIR, f'sub-{self.subject_id}', f'ses-{self.session_id}')
         eeg_filepath = Path(folder, 'eeg', self.eeg_filename)
         audio_filepath = Path(folder, 'audio', self.audio_filename)
         audio_events_filepath = Path(folder, 'audio', self.audio_events_filename)
         
+        # Loading EEG data
+        print(f"🧠 Loading EEG Data from {eeg_filepath}")
         self.eeg_data = mne.io.read_raw_edf(eeg_filepath, preload=True)
+
+        # Loading Audio Data
+        print(f"🎵 Loading Audio Data from {audio_filepath}")
         self.audio_sr, self.audio_data = wavfile.read(audio_filepath)
+
+        # Loading Audio Events
+        print(f"📜 Loading Audio Events from {audio_events_filepath}")
         self.audio_events = pd.read_csv(audio_events_filepath, delimiter='\t')
+
+        print("✅ Data Loading Complete!")
