@@ -3,7 +3,7 @@ from colorama import Fore, Style, init
 
 import config as config
 from src.utils import filter_events, printSectionHeader
-from src.bids_reader import BidsFileLoader
+from dataset.bids_reader import BidsFileLoader
 
 init()
 class DataExtractor:
