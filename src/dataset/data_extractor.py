@@ -4,6 +4,7 @@ from colorama import Fore, Style, init
 
 import config as config
 from src.utils import filter_events, printSectionHeader
+from src.utils import normalize_audio, normalize_eeg
 from src.dataset.bids_reader import BidsFileLoader
 
 import pdb
@@ -35,6 +36,8 @@ class DataExtractor:
         self.eeg = eeg
         self.audio = audio
         self.events = audio_events
+        self.subject_id = subject_id
+        self.session_id = session_id
 
         self.extract_data()
 
@@ -72,8 +75,9 @@ class DataExtractor:
 
         # Store the extracted samples
         self.eeg_samples = np.array(eeg_samples)  # 🧠 Extracted EEG Samples
+        self.eeg_samples = normalize_eeg(self.eeg_samples)
         self.audio_samples = np.array(audio_samples)  # 🎵 Extracted Audio Samples
-
+        self.audio_samples = normalize_audio(self.audio_samples, self.sub)
         print("✅ Data Extraction Complete!")
 
 class FeatureExtraction:
