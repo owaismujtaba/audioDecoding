@@ -8,6 +8,7 @@ from colorama import Fore, Style, init
 import config as config
 from src.utils import printSectionHeader
 import pdb
+
 init()
 
 class BidsFileLoader:
@@ -33,7 +34,7 @@ class BidsFileLoader:
             subject_id (str): The subject identifier.
             session_id (str): The session identifier.
         """
-        printSectionHeader(f"{Fore.CYAN}📂 Loading BIDS Subject Info")
+        printSectionHeader(f"{Fore.CYAN}📂 Reading  Subject Info (BIDS)")
         self.subject_id = subject_id
         self.session_id = session_id
         self.audio_filename = f'sub-{subject_id}_ses-{session_id}_task-PilotStudy_run-01_audio.wav'
