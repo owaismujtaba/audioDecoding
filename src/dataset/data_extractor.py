@@ -77,6 +77,7 @@ class DataExtractor:
         self.eeg_samples = np.array(eeg_samples)  # 🧠 Extracted EEG Samples
         self.eeg_samples = normalize_eeg(self.eeg_samples)
         self.audio_samples = np.array(audio_samples)  # 🎵 Extracted Audio Samples
+        pdb.set_trace()
         self.audio_samples = normalize_audio(self.audio_samples, self.subject_id, self.session_id)
         print("✅ Data Extraction Complete!")
 

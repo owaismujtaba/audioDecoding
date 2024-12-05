@@ -1,7 +1,9 @@
 import numpy as np
+import os
 import json
 import config as config
 from pathlib import Path
+from scipy.io.wavfile import write
 
 import pdb
 
@@ -111,3 +113,13 @@ def normalize_eeg(eeg_data):
     
     return normalized_data
 
+def construct_audio(audio, subject_id, session_id):
+    print('Wrting Audio File')
+    dir = Path(config.AUDIO_DIR)
+    filename = Path(
+        dir, 
+        f'sub-{subject_id}_ses-{session_id}.wav'
+    )
+    os.makedirs(dir)
+    audio = audio.flatten()
+    write(filename, config.AUDIO_SR, audio)
