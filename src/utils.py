@@ -59,7 +59,7 @@ def normalize_audio(audio_data: np.ndarray, subject_id, session_id) -> np.ndarra
     data = {
         'subject_id':subject_id,
         'session_id':session_id,
-        'max_val':max_val
+        'max_val':float(max_val)
     }
     with open(filepath, 'w') as json_file:
         json.dump(data, json_file)
@@ -100,6 +100,7 @@ def normalize_eeg(eeg_data):
     Returns:
         np.ndarray: Normalized EEG data of the same shape.
     """
+    print('Normalizing EEG Data')
     eeg_data = np.asarray(eeg_data)
     
     mean = eeg_data.mean(axis=-1, keepdims=True)  # Mean across the last axis (timepoints)

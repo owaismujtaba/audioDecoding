@@ -36,8 +36,8 @@ class DataExtractor:
         self.eeg = eeg
         self.audio = audio
         self.events = audio_events
-        self.subject_id = subject_id
-        self.session_id = session_id
+        self.subject_id = f'sub-{subject_id}'
+        self.session_id = f'ses-{session_id}'
 
         self.extract_data()
 
@@ -77,7 +77,7 @@ class DataExtractor:
         self.eeg_samples = np.array(eeg_samples)  # 🧠 Extracted EEG Samples
         self.eeg_samples = normalize_eeg(self.eeg_samples)
         self.audio_samples = np.array(audio_samples)  # 🎵 Extracted Audio Samples
-        self.audio_samples = normalize_audio(self.audio_samples, self.sub)
+        self.audio_samples = normalize_audio(self.audio_samples, self.subject_id, self.session_id)
         print("✅ Data Extraction Complete!")
 
 class FeatureExtraction:

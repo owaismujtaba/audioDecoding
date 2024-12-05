@@ -14,10 +14,17 @@ def rmse_loss(y_true, y_pred):
     return tf.sqrt(tf.reduce_mean(tf.square(y_true - y_pred)))
 
 class ModelTrainer:
-    def __init__(self, model, model_name):
+    def __init__(self, model, model_name, subject_id, session_id):
         self.model = model
         self.model_name = model_name
-        self.model_dir = Path(config.TRAINED_MODEL_DIR, model_name)
+        self.subject_id = subject_id
+        self.session_id = session_id
+        self.model_dir = Path(
+            config.TRAINED_MODEL_DIR, 
+            f'sub-{subject_id}',
+            f'ses-{session_id}',
+            model_name
+        )
         os.makedirs(self.model_dir, exist_ok=True)
         self.best_model_filepath = Path(self.model_dir, f'{model_name}.keras')
         
