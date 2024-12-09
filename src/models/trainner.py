@@ -31,11 +31,18 @@ class ModelTrainer:
     def train(self, x_train, y_train):       
         self.model.compile(
             optimizer=Adam(learning_rate=0.001),
-            loss=rmse_loss,
+            #loss=rmse_loss,
+            loss = tf.keras.losses.LogCosh(),
             metrics=['mse']
         )
+
+        if not self.model.built:
+            input_shape = x_train.shape[1:]  # Exclude batch size
+            self.model.build(input_shape=(None, *input_shape))
         
-        self.model.summary()
+
+        
+        print(self.model.summary())
         
         callbacks = [
             tf.keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True),

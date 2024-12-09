@@ -4,8 +4,9 @@ from colorama import Fore, Style, init
 
 import config as config
 from src.utils import filter_events, printSectionHeader
-from src.utils import normalize_audio, normalize_eeg
+from src.utils import normalize_audio, normalize_eeg, make_audio
 from src.dataset.bids_reader import BidsFileLoader
+
 
 import pdb
 
@@ -77,8 +78,8 @@ class DataExtractor:
         self.eeg_samples = np.array(eeg_samples)  # 🧠 Extracted EEG Samples
         self.eeg_samples = normalize_eeg(self.eeg_samples)
         self.audio_samples = np.array(audio_samples)  # 🎵 Extracted Audio Samples
-        pdb.set_trace()
-        self.audio_samples = normalize_audio(self.audio_samples, self.subject_id, self.session_id)
+        self.audio_samples_normalized = normalize_audio(self.audio_samples, self.subject_id, self.session_id)
+        make_audio(self.audio_samples, self.subject_id, self.session_id)
         print("✅ Data Extraction Complete!")
 
 class FeatureExtraction:
@@ -188,8 +189,7 @@ def data_extraction_pipeline(subject_id, session_id):
     audio_samples = data_extractor.audio_samples  # 🎵 Extracted Audio Samples
     
     printSectionHeader("✅ Data Extraction Complete!")
-
-    return eeg_samples, audio_samples
+    return eeg_samples, np.array(audio_samples)
 
 
 def train_val_test_dataloader_pipeline(subject_id, session_id):
@@ -205,7 +205,6 @@ def train_val_test_dataloader_pipeline(subject_id, session_id):
     print("🔀 Splitting data into Train and Test sets...")
     indexs = [i for i in range(eeg_samples.shape[0])]
     train_indexs, test_indexs = train_test_split(indexs, test_size=0.15, random_state=42)
-
     train_eeg_samples = eeg_samples[train_indexs]
     test_eeg_samples = eeg_samples[test_indexs]
 

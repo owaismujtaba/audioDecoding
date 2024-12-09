@@ -4,6 +4,7 @@ import json
 import config as config
 from pathlib import Path
 from scipy.io.wavfile import write
+import tensorflow as tf
 
 import pdb
 
@@ -51,8 +52,13 @@ def normalize_audio(audio_data: np.ndarray, subject_id, session_id) -> np.ndarra
     Returns:
         np.ndarray: Normalized audio data in the range [0, 1].
     """
-    max_val = np.max(np.abs(audio_data))  
-    normalized_audio = audio_data.astype(np.float32) / max_val
+    print('Normalizing Audio')
+    min_val = tf.reduce_min(audio_data)
+    max_val = tf.reduce_max(audio_data)
+    normalized_audio = (audio_data - min_val) / (max_val - min_val)  # Scale to [0, 1]
+
+    #max_val = np.max(np.abs(audio_data))  
+    #normalized_audio = audio_data.astype(np.float32) / max_val
     
     filepath = Path(
         config.CUR_DIR, 'configuration', 
@@ -61,7 +67,8 @@ def normalize_audio(audio_data: np.ndarray, subject_id, session_id) -> np.ndarra
     data = {
         'subject_id':subject_id,
         'session_id':session_id,
-        'max_val':float(max_val)
+        'max_val':float(max_val),
+        'min_val':float(min_val)
     }
     with open(filepath, 'w') as json_file:
         json.dump(data, json_file)
@@ -86,9 +93,10 @@ def denormalize_audio(normalized_audio: np.ndarray,  subject_id, session_id) -> 
         data = json.load(json_file)
     
     max_val = data["max_val"]
+    min_val = data['min_val']
 
     normalized_audio = np.array(data["normalized_audio"], dtype=np.float32)
-    restored_audio = (normalized_audio * max_val).astype(np.int16)
+    restored_audio = (normalized_audio * (max_val - min_val) + min_val).astype(np.int16)
     return restored_audio
 
 
@@ -113,13 +121,15 @@ def normalize_eeg(eeg_data):
     
     return normalized_data
 
-def construct_audio(audio, subject_id, session_id):
-    print('Wrting Audio File')
+def make_audio(audio, subject_id, session_id):
+    print('Wrting Audio Info File')
     dir = Path(config.AUDIO_DIR)
     filename = Path(
         dir, 
-        f'sub-{subject_id}_ses-{session_id}.wav'
+        f'{subject_id}_{session_id}.wav'
     )
-    os.makedirs(dir)
+    os.makedirs(dir, exist_ok=True)
+    audio = audio.astype(np.int16)
     audio = audio.flatten()
+   
     write(filename, config.AUDIO_SR, audio)
